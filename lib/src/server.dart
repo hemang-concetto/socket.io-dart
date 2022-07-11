@@ -10,6 +10,7 @@
 /// Copyright (C) 2017 Potix Corporation. All Rights Reserved.
 import 'dart:async';
 import 'dart:io';
+
 import 'package:logging/logging.dart';
 import 'package:socket_io/src/client.dart';
 import 'package:socket_io/src/engine/engine.dart';
@@ -65,7 +66,7 @@ class Server {
   /// @param {http.Server|Number|Object} http server, port or options
   /// @param {Object} options
   /// @api public
-  Server({server, Map? options}) {
+  Server({server, Map? options, String? address}) {
     options ??= {};
     path(options.containsKey('path') ? options['path'] : '/socket.io');
     serveClient(false != options['serveClient']);
@@ -74,7 +75,7 @@ class Server {
     sockets = of('/');
     if (server != null) {
       _ready = Future(() async {
-        await attach(server, options);
+        await attach(server, opts: options, address: address);
         return true;
       });
     } else {
@@ -209,8 +210,8 @@ class Server {
   /// @param {Object} options passed to engine.io
   /// @return {Server} self
   /// @api public
-  Future<void> listen(srv, [Map? opts]) async {
-    await attach(srv, opts);
+  Future<void> listen(srv, {Map? opts, String? address}) async {
+    await attach(srv, opts: opts, address: address);
   }
 
   /// Attaches socket.io to a server or port.
@@ -219,7 +220,7 @@ class Server {
   /// @param {Object} options passed to engine.io
   /// @return {Server} self
   /// @api public
-  Future<Server> attach(dynamic srv, [Map? opts]) async {
+  Future<Server> attach(dynamic srv, {Map? opts, String? address}) async {
     if (srv is Function) {
       var msg = 'You are trying to attach socket.io to an express '
           'request handler function. Please pass a http.Server instance.';
@@ -244,7 +245,7 @@ class Server {
       _logger.fine('creating http server and binding to $srv');
       var port = srv.toInt();
       var server = StreamServer();
-      await server.start(port: port);
+      await server.start(address: address, port: port);
 //      HttpServer.bind(InternetAddress.ANY_IP_V4, port).then((
 //          HttpServer server) {
 //        this.httpServer = server;
@@ -412,15 +413,23 @@ class Server {
 
   // redirect to sockets method
   Namespace to(_) => sockets.to(_);
+
   Namespace use(_) => sockets.use(_);
+
   void send(_) => sockets.send(_);
+
   Namespace write(_) => sockets.write(_);
+
   Namespace clients(_) => sockets.clients(_);
+
   Namespace compress(_) => sockets.compress(_);
 
   // emitter
   void emit(event, data) => sockets.emit(event, data);
+
   void on(event, handler) => sockets.on(event, handler);
+
   void once(event, handler) => sockets.once(event, handler);
+
   void off(event, handler) => sockets.off(event, handler);
 }
